@@ -2,17 +2,27 @@ import pygame
 
 import asteroids
 
-# Variables
+# Screen Variables
 res = (500, 500)
 window_caption = "2D Asteroids"
 tick_rate = 120
+
+# Asteroid Variables
 max_asteroids = 20
 min_size = 20
 max_size = 100
+ast_spawn_time = 180
+
+# Missile Variables
+missile_tick_life = 180
+
+# Game Used Variables
 last_score = 0
+last_ast_spawn = ast_spawn_time
+
 
 ws = asteroids.Worldspace(res)
-player = asteroids.Ship((0, 0), 15, 1)
+player = asteroids.Ship((0, 0), 15, 1, 90, 3, missile_tick_life)
 ws.ships.append(player)
 ws.min_ast_size = min_size
 ws.max_ast_size = max_size
@@ -56,8 +66,10 @@ while run:
             print(player.speed)
 
         # Game Logic Here
-        if len(ws.asteroids) < max_asteroids:
+        if len(ws.asteroids) < max_asteroids and last_ast_spawn >=180:
+            last_ast_spawn = 0
             ws.spawn_asteroid()
+        last_ast_spawn += 1
 
         ws.update()
         ws.collision()
