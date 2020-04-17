@@ -2,7 +2,17 @@ import pygame
 import numpy as np
 import random
 
-import collision
+
+def check_collision(point, center, radius):
+    dist = np.sqrt(
+        (center[0] - point[0]) ** 2
+        + (center[1] - point[1]) ** 2
+    )
+
+    if dist < radius:
+        return True
+    else:
+        return False
 
 
 class Worldspace:
@@ -55,11 +65,11 @@ class Worldspace:
         for asteroid in self.asteroids:
             asteroid.update()
 
-    def collision(self,):
+    def collision(self):
         for missile in self.missiles:
             for asteroid in self.asteroids:
 
-                if collision.check_collision(missile.pos, asteroid.pos, asteroid.size//2):
+                if check_collision(missile.pos, asteroid.pos, asteroid.size//2):
 
                     try:
                         self.missiles.remove(missile)
@@ -68,12 +78,12 @@ class Worldspace:
 
                     no_of_new_ast = random.randint(0, 5)
 
-                    if no_of_new_ast > 0 and asteroid.size//no_of_new_ast > self.min_ast_size//2:
+                    if no_of_new_ast > 0:
                         for i in range(no_of_new_ast):
                             self.asteroids.append(Asteroid(asteroid.pos,
                                                            np.rad2deg(asteroid.rotation)+random.randint(-15, 15),
                                                            asteroid.speed,
-                                                           asteroid.size//no_of_new_ast
+                                                           asteroid.size//2
                                                            ))
                     self.asteroids.remove(asteroid)
                     self.score += 1
@@ -81,27 +91,33 @@ class Worldspace:
         for ship in self.ships:
             for asteroid in self.asteroids:
 
-                if collision.check_collision(ship.pos, asteroid.pos, asteroid.size//2):
+                if check_collision(ship.pos, asteroid.pos, asteroid.size//2):
                     self.game_over = True
 
     def cleanup(self):
         for missile in self.missiles:
-            if self.minX <= missile.pos[0] <= self.maxX:
-                if self.minY <= missile.pos[1] <= self.maxY:
-                    pass
-                else:
-                    self.missiles.remove(missile)
-            else:
+            if missile.tick_count >= missile.max_ticks:
                 self.missiles.remove(missile)
+            if missile.pos[0] > self.maxX:
+                missile.pos[0] = self.minX
+            if missile.pos[0] < self.minX:
+                missile.pos[0] = self.maxX
+
+            if missile.pos[1] > self.maxY:
+                missile.pos[1] = self.minY
+            if missile.pos[1] < self.minY:
+                missile.pos[1] = self.maxY
 
         for asteroid in self.asteroids:
-            if self.minX <= asteroid.pos[0] <= self.maxX:
-                if self.minY <= asteroid.pos[1] <= self.maxY:
-                    pass
-                else:
-                    self.asteroids.remove(asteroid)
-            else:
-                self.asteroids.remove(asteroid)
+            if asteroid.pos[0] > self.maxX:
+                asteroid.pos[0] = self.minX
+            if asteroid.pos[0] < self.minX:
+                asteroid.pos[0] = self.maxX
+
+            if asteroid.pos[1] > self.maxY:
+                asteroid.pos[1] = self.minY
+            if asteroid.pos[1] < self.minY:
+                asteroid.pos[1] = self.maxY
 
     def get_rect(self):
         temp = pygame.Rect(0, 0, self.size[0], self.size[1])
@@ -124,12 +140,14 @@ class Worldspace:
 
 
 class Ship:
-    def __init__(self, pos, size, speed=1, rotation=-90):
+    def __init__(self, pos, size, speed=1, rotation=90, missile_speed=3, missile_life=120):
         self.pos = list(pos)
         self.size = size
-        self.rotation = rotation
+        self.rotation = -rotation
         self.speed = speed
         self.rotation_modifier = 2
+        self.missile_speed = missile_speed
+        self.missile_life = missile_life
 
     def move(self, worldspace):
         theta = np.deg2rad(self.rotation)
@@ -147,7 +165,7 @@ class Ship:
             self.rotation -= self.speed * self.rotation_modifier
 
     def shoot(self, worldspace):
-        worldspace.missiles.append(Missile(self.pos, self.rotation))
+        worldspace.missiles.append(Missile(self.pos, self.rotation, self.missile_speed, self.missile_life))
 
     def get_poly(self, worldspace):
         r = self.size/np.sqrt(3)
@@ -171,12 +189,14 @@ class Ship:
 
 
 class Missile:
-    def __init__(self, start_pos, rotation, speed=3):
+    def __init__(self, start_pos, rotation, speed=3, max_ticks=240):
         self.pos = [0, 0]
         self.pos[0] = start_pos[0]
         self.pos[1] = start_pos[1]
         self.rotation = np.deg2rad(rotation)
         self.speed = speed
+        self.max_ticks = max_ticks
+        self.tick_count = 0
 
     def update(self):
         change_to_point = (self.speed*np.cos(self.rotation), self.speed*np.sin(self.rotation))
@@ -188,6 +208,7 @@ class Missile:
         start_point = (worldspace.center[0]+self.pos[0], worldspace.center[1]-self.pos[1])
         pygame.draw.line(surface, (0, 255, 0), start_point, (start_point[0]+5*np.cos(self.rotation),
                                                              start_point[1]+5*np.sin(self.rotation)), 1)
+        self.tick_count+=1
 
 
 class Asteroid:
