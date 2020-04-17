@@ -156,10 +156,19 @@ class Ship:
         theta = np.deg2rad(self.rotation)
 
         change_to_point = (self.speed*np.cos(theta), self.speed*np.sin(theta))
-        if worldspace.minX <= (self.pos[0]+change_to_point[0]) <= worldspace.maxX:
-            if worldspace.minY <= (self.pos[1]-change_to_point[1]) <= worldspace.maxY:
-                self.pos[0] += change_to_point[0]
-                self.pos[1] -= change_to_point[1]
+        new_pos = (self.pos[0]+change_to_point[0], self.pos[1]-change_to_point[1])
+
+        if new_pos[0] < worldspace.minX:
+            new_pos = (worldspace.maxX, new_pos[1])
+        if new_pos[0] > worldspace.maxX:
+            new_pos = (worldspace.minX, new_pos[1])
+        if new_pos[1] < worldspace.minY:
+            new_pos = (new_pos[0], worldspace.maxY)
+        if new_pos[1] > worldspace.maxY:
+            new_pos = (new_pos[0], worldspace.minY)
+
+        self.pos = new_pos
+
 
     def rotate(self, direction):
         if direction > 0:
