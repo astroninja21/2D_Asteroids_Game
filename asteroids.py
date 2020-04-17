@@ -78,7 +78,7 @@ class Worldspace:
 
                     no_of_new_ast = random.randint(0, 5)
 
-                    if no_of_new_ast > 0:
+                    if no_of_new_ast > 0 and asteroid.size//2 >= 1:
                         for i in range(no_of_new_ast):
                             self.asteroids.append(Asteroid(asteroid.pos,
                                                            np.rad2deg(asteroid.rotation)+random.randint(-15, 15),
@@ -118,6 +118,9 @@ class Worldspace:
                 asteroid.pos[1] = self.minY
             if asteroid.pos[1] < self.minY:
                 asteroid.pos[1] = self.maxY
+
+            if asteroid.size <= self.min_ast_size:
+                self.asteroids.remove(asteroid)
 
     def get_rect(self):
         temp = pygame.Rect(0, 0, self.size[0], self.size[1])
